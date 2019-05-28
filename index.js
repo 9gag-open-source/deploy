@@ -18,6 +18,9 @@ module.exports = app => {
     res.end('Auth with Post')
   })
 
+  /**
+   * Create deployment from PR labels
+   */
   app.on('pull_request.labeled', async context => {
     const config = await getConfig(context, 'deploy.yml')
 
@@ -59,5 +62,37 @@ module.exports = app => {
       }
       context.github.issues.removeLabel(labelCleanup)
     }
+  })
+
+  /**
+   * Create deployments from Releases
+   */
+  app.on('release.published', async context => {
+    if (context.payload.action != 'published' || context.payload.release.draft) {
+      return
+    }
+
+    const config = await getConfig(context, 'deploy.yml')
+    if (!config || !(config.releases)) {
+      return
+    }
+
+    app.log(`Creating deployment for release '${context.payload.release.tag_name}'`)
+    let deployment = config.releases
+    deployment.owner = context.payload.release.author.login
+    deployment.repo = context.payload.repository.name
+    deployment.ref = context.payload.release.tag_name
+    deployment.headers = {
+      accept: 'application/vnd.github.ant-man-preview+json'
+    }
+
+    context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
+      return deploymentResult
+    }, function (apiError) {
+      //TODO: notify errors to owner
+      let errorMessage = JSON.parse(apiError.message)
+      let body = `Failed to trigger deployment.\n${errorMessage.message}`
+      app.log(body)
+    })
   })
 }

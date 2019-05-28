@@ -27,6 +27,8 @@ labels:
     payload:
       port: 8080
       https: true
+releases:
+  environment: production
 ```
 
 - Create matching labels in your repository
