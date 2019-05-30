@@ -78,8 +78,9 @@ module.exports = app => {
     }
 
     app.log(`Creating deployment for release '${context.payload.release.tag_name}'`)
+
     let deployment = config.releases
-    deployment.owner = context.payload.release.author.login
+    deployment.owner = context.payload.repository.owner.login
     deployment.repo = context.payload.repository.name
     deployment.ref = context.payload.release.tag_name
     deployment.headers = {
