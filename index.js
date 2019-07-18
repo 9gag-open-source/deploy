@@ -23,9 +23,16 @@ module.exports = app => {
    */
   app.on('pull_request.labeled', async context => {
     const config = await getConfig(context, 'deploy.yml')
-
     let labelName = context.payload.label.name
     let encodedLabelName = encodeURI(labelName)
+
+    if (!config) {
+      app.log.debug(`repo [${context.payload.pull_request.head.repo.name}] is not configured`)
+    }
+
+    if (!config.labels || !config.labels[encodedLabelName]) {
+      app.log.debug(`label [${encodedLabelName}] is not configured`)
+    }
 
     if (config && config.labels && config.labels[encodedLabelName]) {
       let deployment = config.labels[encodedLabelName]
@@ -36,6 +43,7 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
+      app.log.debug("creating deployment : " + JSON.stringify(deployment))
       context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
         return deploymentResult
       }, function (apiError) {
