@@ -76,12 +76,19 @@ module.exports = app => {
    * Create deployments from Releases
    */
   app.on('release.published', async context => {
-    if (context.payload.action != 'published' || context.payload.release.draft) {
+    if (context.payload.action != 'published') {
+      app.log("payload action not published")
+      return
+    }
+
+    if (context.payload.release.draft) {
+      app.log("release is draft")
       return
     }
 
     const config = await getConfig(context, 'deploy.yml')
     if (!config || !(config.releases)) {
+      app.log("cannot find drafter config")
       return
     }
 
